@@ -57,8 +57,8 @@ function CartPage() {
           <div className="flex justify-between text-sm"><span>Shipping</span><span className="text-gold">Free</span></div>
           <div className="border-t border-border pt-4 flex justify-between font-medium"><span>Total</span><span>{formatINR(subtotal)}</span></div>
           <p className="text-[11px] text-muted-foreground">✦ Complimentary shipping across India on all orders</p>
-          <button disabled className="w-full bg-espresso text-ivory py-4 text-xs uppercase tracking-[0.25em] opacity-60 cursor-not-allowed">Checkout (coming soon)</button>
-          <p className="text-[10px] text-center text-muted-foreground">Sign-in & payments arrive in the next phase.</p>
+          <Link to="/checkout" className="block text-center w-full bg-espresso text-ivory py-4 text-xs uppercase tracking-[0.25em] hover:bg-espresso/90">Proceed to Checkout</Link>
+          <p className="text-[10px] text-center text-muted-foreground">Sign in required at checkout. Online payment activates once Razorpay is configured.</p>
         </aside>
       </div>
     </main>
