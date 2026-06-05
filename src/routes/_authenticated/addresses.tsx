@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Star } from "lucide-react";
 import { listAddresses, saveAddress, deleteAddress } from "@/lib/account.functions";
 
-export const Route = createFileRoute("/addresses")({
+export const Route = createFileRoute("/_authenticated/addresses")({
   head: () => ({ meta: [{ title: "Addresses — Harshita Collection" }] }),
   component: AddressesPage,
 });

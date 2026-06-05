@@ -7,7 +7,7 @@ import { LogOut, MapPin, User as UserIcon, Heart, ShoppingBag } from "lucide-rea
 import { supabase } from "@/integrations/supabase/client";
 import { getProfile, updateProfile } from "@/lib/account.functions";
 
-export const Route = createFileRoute("/account")({
+export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "My Account — Harshita Collection" }] }),
   component: AccountPage,
 });
