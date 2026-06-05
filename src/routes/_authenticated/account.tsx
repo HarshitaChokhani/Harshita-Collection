@@ -7,7 +7,7 @@ import { LogOut, MapPin, User as UserIcon, Heart, ShoppingBag } from "lucide-rea
 import { supabase } from "@/integrations/supabase/client";
 import { getProfile, updateProfile } from "@/lib/account.functions";
 
-export const Route = createFileRoute("/_authenticated/account")({
+export const Route = createFileRoute("/account")({
   head: () => ({ meta: [{ title: "My Account — Harshita Collection" }] }),
   component: AccountPage,
 });
@@ -65,10 +65,10 @@ function AccountPage() {
       </header>
 
       <div className="grid sm:grid-cols-4 gap-3 mb-10">
-        <Link to="/_authenticated/account" className="border border-gold bg-beige/30 p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2">
+        <Link to="/account" className="border border-gold bg-beige/30 p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2">
           <UserIcon className="size-4" /> Profile
         </Link>
-        <Link to="/_authenticated/addresses" className="border border-border p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:border-gold">
+        <Link to="/addresses" className="border border-border p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:border-gold">
           <MapPin className="size-4" /> Addresses
         </Link>
         <Link to="/wishlist" className="border border-border p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:border-gold">

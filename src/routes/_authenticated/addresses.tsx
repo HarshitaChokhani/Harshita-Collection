@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Star } from "lucide-react";
 import { listAddresses, saveAddress, deleteAddress } from "@/lib/account.functions";
 
-export const Route = createFileRoute("/_authenticated/addresses")({
+export const Route = createFileRoute("/addresses")({
   head: () => ({ meta: [{ title: "Addresses — Harshita Collection" }] }),
   component: AddressesPage,
 });
@@ -66,7 +66,7 @@ function AddressesPage() {
     <main className="max-w-5xl mx-auto px-4 py-12 sm:py-16">
       <div className="flex items-end justify-between mb-8 gap-4 flex-wrap">
         <div>
-          <Link to="/_authenticated/account" className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground hover:text-gold">← Account</Link>
+          <Link to="/account" className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground hover:text-gold">← Account</Link>
           <h1 className="font-display text-4xl sm:text-5xl mt-2">Addresses</h1>
         </div>
         {!form && (
