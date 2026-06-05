@@ -64,9 +64,12 @@ function AccountPage() {
         <h1 className="font-display text-4xl sm:text-5xl mt-2">My Account</h1>
       </header>
 
-      <div className="grid sm:grid-cols-4 gap-3 mb-10">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-10">
         <Link to="/account" className="border border-gold bg-beige/30 p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2">
           <UserIcon className="size-4" /> Profile
+        </Link>
+        <Link to="/orders" className="border border-border p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:border-gold">
+          <ShoppingBag className="size-4" /> Orders
         </Link>
         <Link to="/addresses" className="border border-border p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:border-gold">
           <MapPin className="size-4" /> Addresses
