@@ -7,8 +7,27 @@ import { Tag, Loader2 } from "lucide-react";
 import { useCart } from "@/lib/store/cart";
 import { listAddresses } from "@/lib/account.functions";
 import { validateCoupon, createOrder } from "@/lib/checkout.functions";
+import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/payment.functions";
 import { formatINR } from "@/lib/format";
 import { resolveImage } from "@/lib/asset-map";
+
+declare global {
+  interface Window {
+    Razorpay?: new (opts: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+function loadRazorpay(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({ meta: [{ title: "Checkout — Harshita Collection" }] }),
@@ -27,6 +46,8 @@ function CheckoutPage() {
   const fetchAddresses = useServerFn(listAddresses);
   const checkCoupon = useServerFn(validateCoupon);
   const placeOrder = useServerFn(createOrder);
+  const initRazorpay = useServerFn(createRazorpayOrder);
+  const verifyPayment = useServerFn(verifyRazorpayPayment);
 
   const { data: addresses = [] } = useQuery({ queryKey: ["addresses"], queryFn: () => fetchAddresses() });
 
@@ -80,7 +101,7 @@ function CheckoutPage() {
     if (!addr) { toast.error("Choose a shipping address"); return; }
     setPlacing(true);
     try {
-      const res = await placeOrder({
+      const order = await placeOrder({
         data: {
           items: items.map((i) => ({
             productId: i.productId,
@@ -105,11 +126,52 @@ function CheckoutPage() {
           notes: notes || null,
         },
       });
+
+      const loaded = await loadRazorpay();
+      if (!loaded) throw new Error("Payment SDK failed to load");
+
+      const rzp = await initRazorpay({ data: { orderId: order.id } });
+
+      await new Promise<void>((resolve, reject) => {
+        const checkout = new window.Razorpay!({
+          key: rzp.keyId,
+          amount: rzp.amount,
+          currency: rzp.currency,
+          name: "Harshita Collection",
+          description: `Order ${rzp.orderNumber}`,
+          order_id: rzp.razorpayOrderId,
+          prefill: {
+            name: addr.full_name,
+            contact: addr.phone,
+          },
+          theme: { color: "#7a5c3a" },
+          handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+            try {
+              await verifyPayment({
+                data: {
+                  orderId: order.id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                },
+              });
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          },
+          modal: {
+            ondismiss: () => reject(new Error("Payment cancelled")),
+          },
+        });
+        checkout.open();
+      });
+
       clear();
-      toast.success(`Order ${res.order_number} placed`);
-      navigate({ to: "/orders/$id", params: { id: res.id }, replace: true });
+      toast.success(`Payment successful — order ${order.order_number}`);
+      navigate({ to: "/orders/$id", params: { id: order.id }, replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not place order");
+      toast.error(err instanceof Error ? err.message : "Could not complete payment");
     } finally { setPlacing(false); }
   };
 
@@ -170,7 +232,7 @@ function CheckoutPage() {
           <section>
             <h2 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-4">3 · Payment</h2>
             <div className="bg-beige/30 border border-border p-5 text-sm text-muted-foreground">
-              Online payment (UPI, cards, net banking) becomes available once Razorpay keys are configured. For now you can place an order and we'll confirm via WhatsApp/email.
+              Secure online payment via Razorpay — UPI, cards, net banking, and wallets. You'll be prompted after confirming the order.
             </div>
           </section>
         </div>
@@ -212,7 +274,7 @@ function CheckoutPage() {
 
           <button onClick={onPlace} disabled={placing} className="w-full bg-espresso text-ivory py-4 text-xs uppercase tracking-[0.25em] hover:bg-espresso/90 disabled:opacity-60 flex items-center justify-center gap-2">
             {placing && <Loader2 className="size-4 animate-spin" />}
-            {placing ? "Placing order…" : "Place order"}
+            {placing ? "Processing…" : `Pay ${formatINR(total)}`}
           </button>
           <Link to="/cart" className="block text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-gold">← Back to cart</Link>
         </aside>
