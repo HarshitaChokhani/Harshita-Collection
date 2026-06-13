@@ -7,8 +7,27 @@ import { Tag, Loader2 } from "lucide-react";
 import { useCart } from "@/lib/store/cart";
 import { listAddresses } from "@/lib/account.functions";
 import { validateCoupon, createOrder } from "@/lib/checkout.functions";
+import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/payment.functions";
 import { formatINR } from "@/lib/format";
 import { resolveImage } from "@/lib/asset-map";
+
+declare global {
+  interface Window {
+    Razorpay?: new (opts: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+function loadRazorpay(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({ meta: [{ title: "Checkout — Harshita Collection" }] }),
