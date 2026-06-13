@@ -101,7 +101,7 @@ function CheckoutPage() {
     if (!addr) { toast.error("Choose a shipping address"); return; }
     setPlacing(true);
     try {
-      const res = await placeOrder({
+      const order = await placeOrder({
         data: {
           items: items.map((i) => ({
             productId: i.productId,
@@ -126,11 +126,52 @@ function CheckoutPage() {
           notes: notes || null,
         },
       });
+
+      const loaded = await loadRazorpay();
+      if (!loaded) throw new Error("Payment SDK failed to load");
+
+      const rzp = await initRazorpay({ data: { orderId: order.id } });
+
+      await new Promise<void>((resolve, reject) => {
+        const checkout = new window.Razorpay!({
+          key: rzp.keyId,
+          amount: rzp.amount,
+          currency: rzp.currency,
+          name: "Harshita Collection",
+          description: `Order ${rzp.orderNumber}`,
+          order_id: rzp.razorpayOrderId,
+          prefill: {
+            name: addr.full_name,
+            contact: addr.phone,
+          },
+          theme: { color: "#7a5c3a" },
+          handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+            try {
+              await verifyPayment({
+                data: {
+                  orderId: order.id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                },
+              });
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          },
+          modal: {
+            ondismiss: () => reject(new Error("Payment cancelled")),
+          },
+        });
+        checkout.open();
+      });
+
       clear();
-      toast.success(`Order ${res.order_number} placed`);
-      navigate({ to: "/orders/$id", params: { id: res.id }, replace: true });
+      toast.success(`Payment successful — order ${order.order_number}`);
+      navigate({ to: "/orders/$id", params: { id: order.id }, replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not place order");
+      toast.error(err instanceof Error ? err.message : "Could not complete payment");
     } finally { setPlacing(false); }
   };
 
