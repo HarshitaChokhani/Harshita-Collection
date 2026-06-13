@@ -274,7 +274,7 @@ function CheckoutPage() {
 
           <button onClick={onPlace} disabled={placing} className="w-full bg-espresso text-ivory py-4 text-xs uppercase tracking-[0.25em] hover:bg-espresso/90 disabled:opacity-60 flex items-center justify-center gap-2">
             {placing && <Loader2 className="size-4 animate-spin" />}
-            {placing ? "Placing order…" : "Place order"}
+            {placing ? "Processing…" : `Pay ${formatINR(total)}`}
           </button>
           <Link to="/cart" className="block text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-gold">← Back to cart</Link>
         </aside>
