@@ -232,7 +232,7 @@ function CheckoutPage() {
           <section>
             <h2 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-4">3 · Payment</h2>
             <div className="bg-beige/30 border border-border p-5 text-sm text-muted-foreground">
-              Online payment (UPI, cards, net banking) becomes available once Razorpay keys are configured. For now you can place an order and we'll confirm via WhatsApp/email.
+              Secure online payment via Razorpay — UPI, cards, net banking, and wallets. You'll be prompted after confirming the order.
             </div>
           </section>
         </div>
