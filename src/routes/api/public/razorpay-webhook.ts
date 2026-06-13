@@ -34,7 +34,7 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
             .from("orders")
             .update({
               payment_status: "paid",
-              status: "confirmed",
+              status: "processing",
               razorpay_payment_id: payment.id,
             })
             .eq("razorpay_order_id", payment.order_id);

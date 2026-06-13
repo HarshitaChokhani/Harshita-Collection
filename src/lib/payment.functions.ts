@@ -101,7 +101,7 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
       .from("orders")
       .update({
         payment_status: "paid",
-        status: "confirmed",
+        status: "processing",
         razorpay_payment_id: data.razorpay_payment_id,
       })
       .eq("id", order.id);
