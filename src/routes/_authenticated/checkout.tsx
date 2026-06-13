@@ -46,6 +46,8 @@ function CheckoutPage() {
   const fetchAddresses = useServerFn(listAddresses);
   const checkCoupon = useServerFn(validateCoupon);
   const placeOrder = useServerFn(createOrder);
+  const initRazorpay = useServerFn(createRazorpayOrder);
+  const verifyPayment = useServerFn(verifyRazorpayPayment);
 
   const { data: addresses = [] } = useQuery({ queryKey: ["addresses"], queryFn: () => fetchAddresses() });
 
