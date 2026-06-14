@@ -55,8 +55,9 @@ function AuthPage() {
 
   const onGoogle = async () => {
     setLoading(true);
+    const postLoginPath = redirect ?? "/account";
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + (redirect ?? "/account"),
+      redirect_uri: `${window.location.origin}/auth?redirect=${encodeURIComponent(postLoginPath)}`,
     });
     if (result.error) {
       toast.error("Could not sign in with Google");
