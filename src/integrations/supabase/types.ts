@@ -327,6 +327,8 @@ export type Database = {
       products: {
         Row: {
           category_id: string | null
+          colors: Json | null
+          cotton_percentage: number | null
           created_at: string
           description: string | null
           discount_pct: number | null
@@ -336,17 +338,23 @@ export type Database = {
           is_bestseller: boolean
           is_featured: boolean
           is_new: boolean
+          material_composition: string | null
           mrp: number | null
           name: string
           price: number
           rating: number | null
           rating_count: number | null
+          return_policy: string | null
+          shipping_info: string | null
           slug: string
           stock: number
           updated_at: string
+          wash_care: string | null
         }
         Insert: {
           category_id?: string | null
+          colors?: Json | null
+          cotton_percentage?: number | null
           created_at?: string
           description?: string | null
           discount_pct?: number | null
@@ -356,17 +364,23 @@ export type Database = {
           is_bestseller?: boolean
           is_featured?: boolean
           is_new?: boolean
+          material_composition?: string | null
           mrp?: number | null
           name: string
           price: number
           rating?: number | null
           rating_count?: number | null
+          return_policy?: string | null
+          shipping_info?: string | null
           slug: string
           stock?: number
           updated_at?: string
+          wash_care?: string | null
         }
         Update: {
           category_id?: string | null
+          colors?: Json | null
+          cotton_percentage?: number | null
           created_at?: string
           description?: string | null
           discount_pct?: number | null
@@ -376,14 +390,18 @@ export type Database = {
           is_bestseller?: boolean
           is_featured?: boolean
           is_new?: boolean
+          material_composition?: string | null
           mrp?: number | null
           name?: string
           price?: number
           rating?: number | null
           rating_count?: number | null
+          return_policy?: string | null
+          shipping_info?: string | null
           slug?: string
           stock?: number
           updated_at?: string
+          wash_care?: string | null
         }
         Relationships: [
           {

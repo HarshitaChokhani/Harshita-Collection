@@ -19,6 +19,11 @@ export interface ProductVariant {
   stock: number;
 }
 
+export interface ProductColor {
+  name: string;
+  hex: string;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -37,6 +42,12 @@ export interface Product {
   is_new: boolean;
   is_bestseller: boolean;
   is_featured: boolean;
+  cotton_percentage?: number | null;
+  material_composition?: string | null;
+  wash_care?: string | null;
+  colors?: ProductColor[] | null;
+  shipping_info?: string | null;
+  return_policy?: string | null;
   images: ProductImage[];
   variants?: ProductVariant[];
 }
