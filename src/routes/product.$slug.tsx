@@ -73,7 +73,7 @@ function ProductPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
         <div>
           <div className="aspect-[4/5] bg-beige overflow-hidden rounded-sm mb-3">
-            <img src={mainImg} alt={product.name} width={800} height={1000} className="w-full h-full object-cover" />
+            <img src={mainImg} alt={`${product.name}${product.fabric ? ` — ${product.fabric}` : ""}${product.category_name ? ` ${product.category_name}` : ""} from Harshita Collection`} width={800} height={1000} fetchPriority="high" className="w-full h-full object-cover" />
           </div>
           {product.images.length > 1 && (
             <div className="grid grid-cols-5 gap-2">
@@ -123,9 +123,9 @@ function ProductPage() {
           <div className="mb-8">
             <p className="text-[10px] uppercase tracking-[0.25em] mb-3 text-muted-foreground">Quantity</p>
             <div className="inline-flex items-center border border-border">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="size-10 grid place-items-center hover:bg-beige"><Minus className="size-3.5" /></button>
-              <span className="w-12 text-center text-sm">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="size-10 grid place-items-center hover:bg-beige"><Plus className="size-3.5" /></button>
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity" className="size-10 grid place-items-center hover:bg-beige"><Minus className="size-3.5" /></button>
+              <span className="w-12 text-center text-sm" aria-live="polite">{qty}</span>
+              <button onClick={() => setQty((q) => q + 1)} aria-label="Increase quantity" className="size-10 grid place-items-center hover:bg-beige"><Plus className="size-3.5" /></button>
             </div>
           </div>
 

@@ -35,12 +35,12 @@ function Home() {
       <section className="px-4 py-6 sm:py-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7 order-2 lg:order-1">
-            <img src={HERO_IMG} alt="The Monsoon Silk Collection" width={1280} height={1600} className="w-full aspect-[4/5] object-cover rounded-sm" />
+            <img src={HERO_IMG} alt="Model wearing a hand-embroidered Monsoon Silk saree from Harshita Collection" width={1280} height={1600} fetchPriority="high" className="w-full aspect-[4/5] object-cover rounded-sm" />
           </div>
           <div className="lg:col-span-5 order-1 lg:order-2 text-center lg:text-left">
             <span className="text-[11px] uppercase tracking-[0.3em] text-gold">The Monsoon Edit</span>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.05] mt-4 mb-5 text-balance">
-              Elegance in Every Thread
+              Harshita Collection — Hand-crafted Indian traditional wear for women
             </h1>
             <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto lg:mx-0 mb-8">
               Discover hand-stitched ensembles that mirror the grace of Indian tradition — reimagined for the modern boutique woman.
@@ -63,7 +63,7 @@ function Home() {
             {featuredCats.map((cat) => (
               <Link key={cat.slug} to="/category/$slug" params={{ slug: cat.slug }} className="group">
                 <div className="aspect-[3/4] bg-ivory overflow-hidden rounded-sm mb-3">
-                  <img src={CATEGORY_IMG[cat.slug]} alt={cat.name} loading="lazy" width={800} height={1000} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <img src={CATEGORY_IMG[cat.slug]} alt={`Shop ${cat.name} — hand-crafted ${cat.name.toLowerCase()} by Harshita Collection`} loading="lazy" width={800} height={1000} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 </div>
                 <p className="text-center text-[11px] uppercase tracking-[0.2em] font-medium">{cat.name}</p>
               </Link>
