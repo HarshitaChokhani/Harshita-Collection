@@ -41,11 +41,11 @@ function CartPage() {
                 <p className="text-sm font-medium mt-2">{formatINR(i.price)}</p>
                 <div className="flex items-center justify-between mt-3">
                   <div className="inline-flex items-center border border-border">
-                    <button onClick={() => setQty(i.productId, Math.max(1, i.qty - 1), i.size)} className="size-8 grid place-items-center hover:bg-beige"><Minus className="size-3" /></button>
+                    <button onClick={() => setQty(i.productId, Math.max(1, i.qty - 1), i.size)} aria-label="Decrease quantity" className="size-8 grid place-items-center hover:bg-beige"><Minus className="size-3" /></button>
                     <span className="w-10 text-center text-sm">{i.qty}</span>
-                    <button onClick={() => setQty(i.productId, i.qty + 1, i.size)} className="size-8 grid place-items-center hover:bg-beige"><Plus className="size-3" /></button>
+                    <button onClick={() => setQty(i.productId, i.qty + 1, i.size)} aria-label="Increase quantity" className="size-8 grid place-items-center hover:bg-beige"><Plus className="size-3" /></button>
                   </div>
-                  <button onClick={() => remove(i.productId, i.size)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
+                  <button onClick={() => remove(i.productId, i.size)} aria-label="Remove from cart" className="text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
                 </div>
               </div>
             </div>
