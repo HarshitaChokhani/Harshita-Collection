@@ -4,17 +4,16 @@ import { useState } from "react";
 import { useCart } from "@/lib/store/cart";
 import { useWishlist } from "@/lib/store/wishlist";
 
-const NAV = [
-  { to: "/category/$slug", params: { slug: "new-arrivals" }, label: "New Arrivals" },
-  { to: "/category/$slug", params: { slug: "suits" }, label: "Suits" },
-  { to: "/category/$slug", params: { slug: "kurtis" }, label: "Kurtis" },
-  { to: "/category/$slug", params: { slug: "kurti-pant-sets" }, label: "Kurti Pant Sets" },
-  { to: "/category/$slug", params: { slug: "sarees" }, label: "Sarees" },
-  { to: "/category/$slug", params: { slug: "dupattas" }, label: "Dupattas" },
-  { to: "/category/$slug", params: { slug: "trousers" }, label: "Trousers" },
-  { to: "/category/$slug", params: { slug: "festive-collection" }, label: "Festive" },
-  { to: "/category/$slug", params: { slug: "best-sellers" }, label: "Best Sellers" },
-  { to: "/contact", params: {}, label: "Contact" },
+const CATEGORIES = [
+  { slug: "new-arrivals", label: "New Arrivals" },
+  { slug: "suits", label: "Suits" },
+  { slug: "kurtis", label: "Kurtis" },
+  { slug: "kurti-pant-sets", label: "Kurti Pant Sets" },
+  { slug: "sarees", label: "Sarees" },
+  { slug: "dupattas", label: "Dupattas" },
+  { slug: "trousers", label: "Trousers" },
+  { slug: "festive-collection", label: "Festive" },
+  { slug: "best-sellers", label: "Best Sellers" },
 ] as const;
 
 export function Header() {
@@ -90,17 +89,24 @@ export function Header() {
         )}
 
         <nav className="hidden lg:flex gap-7 px-4 py-2.5 border-t border-border/60 justify-center bg-beige/20">
-          {NAV.map((item) => (
+          {CATEGORIES.map((item) => (
             <Link
-              key={item.params.slug}
-              to={item.to}
-              params={item.params}
+              key={item.slug}
+              to="/category/$slug"
+              params={{ slug: item.slug }}
               className="text-[11px] uppercase tracking-[0.18em] hover:text-gold transition-colors"
               activeProps={{ className: "text-gold" }}
             >
               {item.label}
             </Link>
           ))}
+          <Link
+            to="/contact"
+            className="text-[11px] uppercase tracking-[0.18em] hover:text-gold transition-colors"
+            activeProps={{ className: "text-gold" }}
+          >
+            Contact
+          </Link>
         </nav>
       </header>
 
@@ -113,11 +119,11 @@ export function Header() {
               <button onClick={() => setOpen(false)} aria-label="Close"><X className="size-5" /></button>
             </div>
             <ul className="space-y-1">
-              {NAV.map((item) => (
-                <li key={item.params.slug}>
+              {CATEGORIES.map((item) => (
+                <li key={item.slug}>
                   <Link
-                    to={item.to}
-                    params={item.params}
+                    to="/category/$slug"
+                    params={{ slug: item.slug }}
                     onClick={() => setOpen(false)}
                     className="block py-3 border-b border-border text-sm uppercase tracking-[0.15em]"
                   >
@@ -125,6 +131,15 @@ export function Header() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  to="/contact"
+                  onClick={() => setOpen(false)}
+                  className="block py-3 border-b border-border text-sm uppercase tracking-[0.15em]"
+                >
+                  Contact
+                </Link>
+              </li>
               <li className="pt-6">
                 <Link to="/account" onClick={() => setOpen(false)} className="block py-2 text-sm uppercase tracking-[0.15em]">Account</Link>
                 <Link to="/wishlist" onClick={() => setOpen(false)} className="block py-2 text-sm uppercase tracking-[0.15em]">Wishlist</Link>
