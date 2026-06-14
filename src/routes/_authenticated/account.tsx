@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 function AccountPage() {
   const fetchProfile = useServerFn(getProfile);
   const saveProfile = useServerFn(updateProfile);
+  const fetchAdmin = useServerFn(checkAdmin);
   const qc = useQueryClient();
   const router = useRouter();
   const navigate = useNavigate();
@@ -24,6 +25,10 @@ function AccountPage() {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: () => fetchProfile(),
+  });
+  const { data: adminCheck } = useQuery({
+    queryKey: ["is-admin"],
+    queryFn: () => fetchAdmin(),
   });
 
   const [fullName, setFullName] = useState("");
