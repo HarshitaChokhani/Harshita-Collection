@@ -89,17 +89,24 @@ export function Header() {
         )}
 
         <nav className="hidden lg:flex gap-7 px-4 py-2.5 border-t border-border/60 justify-center bg-beige/20">
-          {NAV.map((item) => (
+          {CATEGORIES.map((item) => (
             <Link
-              key={item.params.slug}
-              to={item.to}
-              params={item.params}
+              key={item.slug}
+              to="/category/$slug"
+              params={{ slug: item.slug }}
               className="text-[11px] uppercase tracking-[0.18em] hover:text-gold transition-colors"
               activeProps={{ className: "text-gold" }}
             >
               {item.label}
             </Link>
           ))}
+          <Link
+            to="/contact"
+            className="text-[11px] uppercase tracking-[0.18em] hover:text-gold transition-colors"
+            activeProps={{ className: "text-gold" }}
+          >
+            Contact
+          </Link>
         </nav>
       </header>
 
