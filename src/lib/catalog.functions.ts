@@ -8,7 +8,7 @@ async function admin() {
 }
 
 const PRODUCT_COLS =
-  "id, slug, name, description, fabric, category_id, price, mrp, discount_pct, rating, rating_count, stock, is_new, is_bestseller, is_featured";
+  "id, slug, name, description, fabric, category_id, price, mrp, discount_pct, rating, rating_count, stock, is_new, is_bestseller, is_featured, cotton_percentage, material_composition, wash_care, colors, shipping_info, return_policy";
 
 function rowToProduct(row: any, images: any[] = [], variants: any[] = []): Product {
   return {
@@ -29,6 +29,12 @@ function rowToProduct(row: any, images: any[] = [], variants: any[] = []): Produ
     is_new: !!row.is_new,
     is_bestseller: !!row.is_bestseller,
     is_featured: !!row.is_featured,
+    cotton_percentage: row.cotton_percentage ?? null,
+    material_composition: row.material_composition ?? null,
+    wash_care: row.wash_care ?? null,
+    colors: Array.isArray(row.colors) ? row.colors : null,
+    shipping_info: row.shipping_info ?? null,
+    return_policy: row.return_policy ?? null,
     images: images.map((i) => ({ url: i.url, alt: i.alt, sort_order: i.sort_order })),
     variants: variants.map((v) => ({
       id: v.id,
