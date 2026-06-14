@@ -1,0 +1,17 @@
+# Harshita Collection
+
+> Harshita Collection is an Indian boutique offering hand-crafted traditional wear for women — suits, kurtis, sarees, dupattas, and festive ensembles, with complimentary shipping across India.
+
+## Pages
+
+- [Home](/): The Monsoon Edit, featured collections, and best sellers.
+- [New Arrivals](/category/new-arrivals): Latest hand-stitched arrivals this season.
+- [Suits](/category/suits): Hand-embroidered Indian suits.
+- [Kurtis](/category/kurtis): Everyday and occasion kurtis.
+- [Kurti Pant Sets](/category/kurti-pant-sets): Coordinated kurti and pant sets.
+- [Sarees](/category/sarees): Banarasi, silk, and contemporary sarees.
+- [Dupattas](/category/dupattas): Hand-finished dupattas and stoles.
+- [Trousers](/category/trousers): Tailored trousers and palazzos.
+- [Festive Collection](/category/festive-collection): Wedding and festival wear.
+- [Best Sellers](/category/best-sellers): Most-loved pieces by our patrons.
+- [Search](/search): Search the catalogue.

@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /addresses
+Disallow: /orders
+Disallow: /checkout
+Disallow: /cart
+Disallow: /wishlist
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /api/
+
+Sitemap: https://harshita-collection.lovable.app/sitemap.xml
