@@ -87,6 +87,11 @@ function AccountPage() {
         <Link to="/cart" className="border border-border p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:border-gold">
           <ShoppingBag className="size-4" /> Cart
         </Link>
+        {adminCheck?.isAdmin && (
+          <Link to="/admin" className="border border-gold bg-gold/10 p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:bg-gold/20">
+            <Shield className="size-4" /> Admin
+          </Link>
+        )}
       </div>
 
       <section className="bg-ivory border border-border p-6 sm:p-10 max-w-2xl">
