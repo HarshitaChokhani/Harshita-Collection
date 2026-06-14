@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { LogOut, MapPin, User as UserIcon, Heart, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getProfile, updateProfile } from "@/lib/account.functions";
+import { checkAdmin } from "@/lib/admin.functions";
+import { Shield } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "My Account — Harshita Collection" }] }),
