@@ -50,18 +50,29 @@ export const adminListProducts = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("products")
-      .select("id, slug, name, price, stock, is_active, is_featured, category_id, categories(name), product_images(url, sort_order)")
+      .select("id, slug, name, price, stock, is_active, is_featured, is_new, is_bestseller, category_id, description, fabric, mrp, discount_pct, cotton_percentage, material_composition, wash_care, colors, shipping_info, return_policy, categories(name), product_images(id, url, sort_order, alt)")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
   });
 
+const colorSchema = z.array(z.object({
+  name: z.string().trim().min(1).max(40),
+  hex: z.string().trim().regex(/^#?[0-9a-fA-F]{3,8}$/, "Invalid hex"),
+})).max(20).optional().nullable();
+
 const productInput = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(2).max(200),
   slug: z.string().trim().min(2).max(200).regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, hyphens only"),
-  description: z.string().max(2000).optional().nullable(),
+  description: z.string().max(4000).optional().nullable(),
   fabric: z.string().max(200).optional().nullable(),
+  material_composition: z.string().max(200).optional().nullable(),
+  cotton_percentage: z.number().int().min(0).max(100).optional().nullable(),
+  wash_care: z.string().max(500).optional().nullable(),
+  colors: colorSchema,
+  shipping_info: z.string().max(500).optional().nullable(),
+  return_policy: z.string().max(500).optional().nullable(),
   category_id: z.string().uuid().optional().nullable(),
   price: z.number().positive().max(999999),
   mrp: z.number().positive().max(999999).optional().nullable(),
@@ -71,7 +82,7 @@ const productInput = z.object({
   is_featured: z.boolean().default(false),
   is_new: z.boolean().default(false),
   is_bestseller: z.boolean().default(false),
-  image_url: z.string().url().max(500).optional().nullable(),
+  image_urls: z.array(z.string().url().max(500)).max(15).optional(),
 });
 
 export const adminSaveProduct = createServerFn({ method: "POST" })
@@ -80,7 +91,11 @@ export const adminSaveProduct = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { id, image_url, ...row } = data;
+    const { id, image_urls, ...row } = data;
+    // normalize hex
+    if (Array.isArray(row.colors)) {
+      row.colors = row.colors.map((c) => ({ name: c.name, hex: c.hex.startsWith("#") ? c.hex : `#${c.hex}` }));
+    }
     let productId = id;
     if (id) {
       const { error } = await supabaseAdmin.from("products").update(row).eq("id", id);
@@ -90,10 +105,13 @@ export const adminSaveProduct = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       productId = created.id;
     }
-    if (image_url && productId) {
-      // Replace existing primary image
+    if (image_urls && productId) {
       await supabaseAdmin.from("product_images").delete().eq("product_id", productId);
-      await supabaseAdmin.from("product_images").insert({ product_id: productId, url: image_url, sort_order: 0, alt: row.name });
+      const rows = image_urls.map((url, i) => ({ product_id: productId, url, sort_order: i, alt: row.name }));
+      if (rows.length) {
+        const { error } = await supabaseAdmin.from("product_images").insert(rows);
+        if (error) throw new Error(error.message);
+      }
     }
     return { id: productId };
   });
@@ -204,6 +222,70 @@ export const adminListCategories = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+// -------- Reviews --------
+export const adminListReviews = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("reviews")
+      .select("id, rating, title, body, status, created_at, product_id, user_id, products(name, slug), profiles(full_name)")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const adminModerateReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    id: z.string().uuid(),
+    status: z.enum(["pending", "approved", "rejected"]),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase.from("reviews").update({ status: data.status }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminDeleteReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("reviews").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// -------- Customers --------
+export const adminListCustomers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: profiles, error }, { data: orders }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, full_name, phone, created_at").order("created_at", { ascending: false }).limit(500),
+      supabaseAdmin.from("orders").select("user_id, total, payment_status"),
+    ]);
+    if (error) throw new Error(error.message);
+    const totals = new Map<string, { orders: number; spent: number }>();
+    for (const o of orders ?? []) {
+      const prev = totals.get(o.user_id) ?? { orders: 0, spent: 0 };
+      prev.orders += 1;
+      if (o.payment_status === "paid") prev.spent += Number(o.total);
+      totals.set(o.user_id, prev);
+    }
+    return (profiles ?? []).map((p) => ({
+      ...p,
+      orders: totals.get(p.id)?.orders ?? 0,
+      spent: totals.get(p.id)?.spent ?? 0,
+    }));
+  });
+
 // -------- Image upload signed URL --------
 export const adminCreateUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -213,7 +295,7 @@ export const adminCreateUploadUrl = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const path = `${Date.now()}-${data.filename}`;
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${data.filename}`;
     const { data: signed, error } = await supabaseAdmin.storage
       .from("product-images")
       .createSignedUploadUrl(path);
