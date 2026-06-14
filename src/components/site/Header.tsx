@@ -4,17 +4,16 @@ import { useState } from "react";
 import { useCart } from "@/lib/store/cart";
 import { useWishlist } from "@/lib/store/wishlist";
 
-const NAV = [
-  { to: "/category/$slug", params: { slug: "new-arrivals" }, label: "New Arrivals" },
-  { to: "/category/$slug", params: { slug: "suits" }, label: "Suits" },
-  { to: "/category/$slug", params: { slug: "kurtis" }, label: "Kurtis" },
-  { to: "/category/$slug", params: { slug: "kurti-pant-sets" }, label: "Kurti Pant Sets" },
-  { to: "/category/$slug", params: { slug: "sarees" }, label: "Sarees" },
-  { to: "/category/$slug", params: { slug: "dupattas" }, label: "Dupattas" },
-  { to: "/category/$slug", params: { slug: "trousers" }, label: "Trousers" },
-  { to: "/category/$slug", params: { slug: "festive-collection" }, label: "Festive" },
-  { to: "/category/$slug", params: { slug: "best-sellers" }, label: "Best Sellers" },
-  { to: "/contact", params: {}, label: "Contact" },
+const CATEGORIES = [
+  { slug: "new-arrivals", label: "New Arrivals" },
+  { slug: "suits", label: "Suits" },
+  { slug: "kurtis", label: "Kurtis" },
+  { slug: "kurti-pant-sets", label: "Kurti Pant Sets" },
+  { slug: "sarees", label: "Sarees" },
+  { slug: "dupattas", label: "Dupattas" },
+  { slug: "trousers", label: "Trousers" },
+  { slug: "festive-collection", label: "Festive" },
+  { slug: "best-sellers", label: "Best Sellers" },
 ] as const;
 
 export function Header() {
