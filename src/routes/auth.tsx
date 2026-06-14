@@ -4,6 +4,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { checkAdmin } from "@/lib/admin.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 const authSearchSchema = z.object({ redirect: z.string().optional() });
 
@@ -25,22 +27,37 @@ const nameSchema = z.string().trim().min(2, "Tell us your name").max(80);
 function AuthPage() {
   const { redirect } = Route.useSearch();
   const navigate = useNavigate();
+  const fetchAdmin = useServerFn(checkAdmin);
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const finishSignIn = async () => {
+    if (redirect && redirect !== "/account") {
+      navigate({ to: redirect, replace: true });
+      return;
+    }
+    try {
+      const admin = await fetchAdmin();
+      navigate({ to: admin.isAdmin ? "/admin" : "/account", replace: true });
+    } catch {
+      navigate({ to: "/account", replace: true });
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: redirect ?? "/account", replace: true });
+      if (data.session) void finishSignIn();
     });
-  }, [navigate, redirect]);
+  }, [redirect]);
 
   const onGoogle = async () => {
     setLoading(true);
+    const postLoginPath = redirect ?? "/account";
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + (redirect ?? "/account"),
+      redirect_uri: `${window.location.origin}/auth?redirect=${encodeURIComponent(postLoginPath)}`,
     });
     if (result.error) {
       toast.error("Could not sign in with Google");
@@ -48,7 +65,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: redirect ?? "/account", replace: true });
+    await finishSignIn();
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -83,7 +100,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back");
-        navigate({ to: redirect ?? "/account", replace: true });
+        await finishSignIn();
       }
     } catch (err) {
       let msg = err instanceof z.ZodError ? err.issues[0]?.message : err instanceof Error ? err.message : "Something went wrong";
