@@ -119,11 +119,11 @@ export function Header() {
               <button onClick={() => setOpen(false)} aria-label="Close"><X className="size-5" /></button>
             </div>
             <ul className="space-y-1">
-              {NAV.map((item) => (
-                <li key={item.params.slug}>
+              {CATEGORIES.map((item) => (
+                <li key={item.slug}>
                   <Link
-                    to={item.to}
-                    params={item.params}
+                    to="/category/$slug"
+                    params={{ slug: item.slug }}
                     onClick={() => setOpen(false)}
                     className="block py-3 border-b border-border text-sm uppercase tracking-[0.15em]"
                   >
@@ -131,6 +131,15 @@ export function Header() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  to="/contact"
+                  onClick={() => setOpen(false)}
+                  className="block py-3 border-b border-border text-sm uppercase tracking-[0.15em]"
+                >
+                  Contact
+                </Link>
+              </li>
               <li className="pt-6">
                 <Link to="/account" onClick={() => setOpen(false)} className="block py-2 text-sm uppercase tracking-[0.15em]">Account</Link>
                 <Link to="/wishlist" onClick={() => setOpen(false)} className="block py-2 text-sm uppercase tracking-[0.15em]">Wishlist</Link>
