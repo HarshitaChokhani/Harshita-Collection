@@ -14,6 +14,7 @@ const NAV = [
   { to: "/category/$slug", params: { slug: "trousers" }, label: "Trousers" },
   { to: "/category/$slug", params: { slug: "festive-collection" }, label: "Festive" },
   { to: "/category/$slug", params: { slug: "best-sellers" }, label: "Best Sellers" },
+  { to: "/contact", params: {}, label: "Contact" },
 ] as const;
 
 export function Header() {
