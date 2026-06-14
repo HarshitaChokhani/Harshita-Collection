@@ -63,7 +63,7 @@ function Home() {
             {featuredCats.map((cat) => (
               <Link key={cat.slug} to="/category/$slug" params={{ slug: cat.slug }} className="group">
                 <div className="aspect-[3/4] bg-ivory overflow-hidden rounded-sm mb-3">
-                  <img src={CATEGORY_IMG[cat.slug]} alt={cat.name} loading="lazy" width={800} height={1000} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <img src={CATEGORY_IMG[cat.slug]} alt={`Shop ${cat.name} — hand-crafted ${cat.name.toLowerCase()} by Harshita Collection`} loading="lazy" width={800} height={1000} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 </div>
                 <p className="text-center text-[11px] uppercase tracking-[0.2em] font-medium">{cat.name}</p>
               </Link>
