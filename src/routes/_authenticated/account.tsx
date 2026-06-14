@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { LogOut, MapPin, User as UserIcon, Heart, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getProfile, updateProfile } from "@/lib/account.functions";
+import { checkAdmin } from "@/lib/admin.functions";
+import { Shield } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "My Account — Harshita Collection" }] }),
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 function AccountPage() {
   const fetchProfile = useServerFn(getProfile);
   const saveProfile = useServerFn(updateProfile);
+  const fetchAdmin = useServerFn(checkAdmin);
   const qc = useQueryClient();
   const router = useRouter();
   const navigate = useNavigate();
@@ -22,6 +25,10 @@ function AccountPage() {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: () => fetchProfile(),
+  });
+  const { data: adminCheck } = useQuery({
+    queryKey: ["is-admin"],
+    queryFn: () => fetchAdmin(),
   });
 
   const [fullName, setFullName] = useState("");
@@ -80,6 +87,11 @@ function AccountPage() {
         <Link to="/cart" className="border border-border p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:border-gold">
           <ShoppingBag className="size-4" /> Cart
         </Link>
+        {adminCheck?.isAdmin && (
+          <Link to="/admin" className="border border-gold bg-gold/10 p-4 text-xs uppercase tracking-[0.18em] flex items-center gap-2 hover:bg-gold/20">
+            <Shield className="size-4" /> Admin
+          </Link>
+        )}
       </div>
 
       <section className="bg-ivory border border-border p-6 sm:p-10 max-w-2xl">
