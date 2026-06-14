@@ -86,7 +86,10 @@ function AuthPage() {
         navigate({ to: redirect ?? "/account", replace: true });
       }
     } catch (err) {
-      const msg = err instanceof z.ZodError ? err.issues[0]?.message : err instanceof Error ? err.message : "Something went wrong";
+      let msg = err instanceof z.ZodError ? err.issues[0]?.message : err instanceof Error ? err.message : "Something went wrong";
+      if (typeof msg === "string" && /invalid login credentials/i.test(msg)) {
+        msg = "Invalid email or password. If you signed up with Google, use the “Continue with Google” button above.";
+      }
       toast.error(msg ?? "Something went wrong");
     } finally {
       setLoading(false);
