@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { checkAdmin } from "@/lib/admin.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { waitForReadySession } from "@/lib/auth-session";
 
 const authSearchSchema = z.object({ redirect: z.string().optional() });
 
@@ -35,6 +36,11 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   const finishSignIn = async () => {
+    const ready = await waitForReadySession();
+    if (!ready) {
+      toast.error("Sign-in did not complete. Please try again.");
+      return;
+    }
     if (redirect && redirect !== "/account") {
       navigate({ to: redirect, replace: true });
       return;
@@ -48,8 +54,8 @@ function AuthPage() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void finishSignIn();
+    waitForReadySession(2, 100).then((ready) => {
+      if (ready) void finishSignIn();
     });
   }, [redirect]);
 
