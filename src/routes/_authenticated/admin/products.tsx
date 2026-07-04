@@ -3,10 +3,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Upload, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Sparkles } from "lucide-react";
 import {
   adminListProducts, adminSaveProduct, adminDeleteProduct,
-  adminListCategories, adminCreateUploadUrl,
+  adminListCategories, adminCreateUploadUrl, adminAutofillFromImage,
 } from "@/lib/admin.functions";
 import { formatINR } from "@/lib/format";
 import { resolveImage } from "@/lib/asset-map";
@@ -43,12 +43,41 @@ function AdminProductsPage() {
   const save = useServerFn(adminSaveProduct);
   const remove = useServerFn(adminDeleteProduct);
   const upload = useServerFn(adminCreateUploadUrl);
+  const autofill = useServerFn(adminAutofillFromImage);
   const qc = useQueryClient();
   const { data: products = [], isLoading } = useQuery({ queryKey: ["admin-products"], queryFn: () => list() });
   const { data: categories = [] } = useQuery({ queryKey: ["admin-categories"], queryFn: () => cats() });
   const [form, setForm] = useState<Form | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
+
+  const onAutofill = async () => {
+    if (!form || !form.image_urls.length) return;
+    setAutofilling(true);
+    try {
+      const ai = await autofill({ data: { imageUrl: form.image_urls[0] } });
+      setForm((f) => {
+        if (!f) return f;
+        const keep = (cur: string, next: string) => (cur.trim() ? cur : next);
+        return {
+          ...f,
+          name: keep(f.name, ai.name),
+          slug: f.slug || (ai.name ? slugify(ai.name) : f.slug),
+          description: keep(f.description, ai.description),
+          fabric: keep(f.fabric, ai.fabric),
+          material_composition: keep(f.material_composition, ai.material_composition),
+          cotton_percentage: f.cotton_percentage || (ai.cotton_percentage ? String(ai.cotton_percentage) : ""),
+          wash_care: keep(f.wash_care, ai.wash_care),
+          category_id: f.category_id || ai.category_id || "",
+          colors: f.colors.length ? f.colors : ai.colors,
+        };
+      });
+      toast.success("Details filled from image — please review before saving");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Autofill failed");
+    } finally { setAutofilling(false); }
+  };
 
   const onFiles = async (files: FileList) => {
     if (!form) return;
@@ -195,13 +224,22 @@ function AdminProductsPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Product Images ({form.image_urls.length}/15)</label>
-              <label className="inline-flex items-center gap-2 border border-border px-4 py-2 text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-beige/40">
-                <Upload className="size-4" />
-                {uploading ? "Uploading…" : "Upload images"}
-                <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files?.length && onFiles(e.target.files)} />
-              </label>
+              <div className="flex items-center gap-2">
+                {form.image_urls.length > 0 && (
+                  <button type="button" onClick={onAutofill} disabled={autofilling}
+                    className="inline-flex items-center gap-2 border border-gold text-espresso px-4 py-2 text-xs uppercase tracking-[0.2em] hover:bg-gold/10 disabled:opacity-50">
+                    <Sparkles className="size-4" />
+                    {autofilling ? "Analysing…" : "Autofill from image"}
+                  </button>
+                )}
+                <label className="inline-flex items-center gap-2 border border-border px-4 py-2 text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-beige/40">
+                  <Upload className="size-4" />
+                  {uploading ? "Uploading…" : "Upload images"}
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files?.length && onFiles(e.target.files)} />
+                </label>
+              </div>
             </div>
-            <p className="text-[11px] text-muted-foreground mb-3">Upload 8–10 images: front, back, side, close-up fabric, sleeve, neck design, full outfit.</p>
+            <p className="text-[11px] text-muted-foreground mb-3">Upload 8–10 images: front, back, side, close-up fabric, sleeve, neck design, full outfit. Then click <span className="text-espresso">Autofill from image</span> to draft the details automatically.</p>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               {form.image_urls.map((url, i) => (
                 <div key={i} className="relative aspect-square bg-beige border border-border group">

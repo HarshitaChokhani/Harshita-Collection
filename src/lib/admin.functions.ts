@@ -286,6 +286,113 @@ export const adminListCustomers = createServerFn({ method: "GET" })
     }));
   });
 
+// -------- AI autofill product details from an image --------
+const autofillSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    name: { type: "string", description: "Concise, appealing product title (e.g. 'Royal Blue Chikankari Anarkali Kurti'). Empty string if unclear." },
+    description: { type: "string", description: "2-4 sentence marketing description of the garment, its look and occasion. Empty string if unclear." },
+    fabric: { type: "string", description: "Primary fabric if identifiable (e.g. 'Cotton', 'Georgette', 'Silk Blend'). Empty string if unsure." },
+    material_composition: { type: "string", description: "Composition if evident (e.g. '70% Cotton, 30% Silk'). Empty string if unsure." },
+    cotton_percentage: { type: "integer", description: "Estimated cotton percentage 0-100, or 0 if unknown." },
+    wash_care: { type: "string", description: "Typical wash-care guidance for this fabric (e.g. 'Dry clean only. Do not bleach.'). Empty string if unsure." },
+    category: { type: "string", description: "The single best-matching category name from the provided list, exactly as written. Empty string if none fit." },
+    colors: {
+      type: "array",
+      description: "Distinct colours visible in the garment.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string", description: "Human colour name, e.g. 'Royal Blue'." },
+          hex: { type: "string", description: "Approximate hex code including leading #, e.g. '#1E3A8A'." },
+        },
+        required: ["name", "hex"],
+      },
+    },
+  },
+  required: ["name", "description", "fabric", "material_composition", "cotton_percentage", "wash_care", "category", "colors"],
+} as const;
+
+export const adminAutofillFromImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    imageUrl: z.string().url().max(1000),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("AI autofill is not configured (missing ANTHROPIC_API_KEY).");
+
+    // Fetch the image server-side and send it inline as base64 so this works
+    // regardless of whether the storage bucket is publicly reachable by Anthropic.
+    const imgRes = await fetch(data.imageUrl);
+    if (!imgRes.ok) throw new Error("Could not load the uploaded image.");
+    const mediaType = imgRes.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+    if (!/^image\/(jpeg|png|gif|webp)$/.test(mediaType)) throw new Error("Unsupported image type for autofill.");
+    const base64 = Buffer.from(await imgRes.arrayBuffer()).toString("base64");
+
+    // Category list guides the model toward a valid choice.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: cats } = await supabaseAdmin.from("categories").select("name").order("sort_order");
+    const categoryNames = (cats ?? []).map((c) => c.name);
+
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic({ apiKey });
+
+    const response = await client.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 1024,
+      output_config: { format: { type: "json_schema", schema: autofillSchema } },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: mediaType as "image/jpeg", data: base64 } },
+            {
+              type: "text",
+              text:
+                "You are cataloguing an item for an Indian ethnic-wear boutique (kurtis, suits, sarees, dupattas, etc.). " +
+                "Examine the garment in this photo and fill in the product details. Be specific and accurate; only state what you can reasonably infer from the image. " +
+                "Leave a field as an empty string (or 0 for cotton_percentage) when you are unsure rather than guessing wildly.\n\n" +
+                "Choose `category` from exactly one of these options (or empty string if none fit):\n" +
+                categoryNames.map((n) => `- ${n}`).join("\n"),
+            },
+          ],
+        },
+      ],
+    });
+
+    const textBlock = response.content.find((b): b is Extract<typeof b, { type: "text" }> => b.type === "text");
+    if (!textBlock) throw new Error("AI autofill returned no result.");
+    let parsed: z.infer<typeof autofillResult>;
+    try {
+      parsed = autofillResult.parse(JSON.parse(textBlock.text));
+    } catch {
+      throw new Error("AI autofill returned an unexpected result.");
+    }
+    // Map the returned category name back to a real category id.
+    let categoryId: string | null = null;
+    if (parsed.category) {
+      const { data: match } = await supabaseAdmin
+        .from("categories").select("id").ilike("name", parsed.category).maybeSingle();
+      categoryId = match?.id ?? null;
+    }
+    return { ...parsed, category_id: categoryId };
+  });
+
+const autofillResult = z.object({
+  name: z.string(),
+  description: z.string(),
+  fabric: z.string(),
+  material_composition: z.string(),
+  cotton_percentage: z.number().int().min(0).max(100),
+  wash_care: z.string(),
+  category: z.string(),
+  colors: z.array(z.object({ name: z.string(), hex: z.string() })),
+});
+
 // -------- Image upload signed URL --------
 export const adminCreateUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
