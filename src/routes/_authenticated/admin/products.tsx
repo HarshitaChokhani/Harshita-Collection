@@ -178,7 +178,7 @@ function AdminProductsPage() {
             <button
               onClick={async () => {
                 try {
-                  const r = await (useServerFn(adminResignAllProductImages) as any)();
+                  const r = await resignAll();
                   toast.success(`Refreshed ${r.updated}/${r.total} images`);
                   qc.invalidateQueries({ queryKey: ["admin-products"] });
                 } catch (e) { toast.error(e instanceof Error ? e.message : "Refresh failed"); }
