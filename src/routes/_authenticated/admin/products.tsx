@@ -88,10 +88,11 @@ function AdminProductsPage() {
       const urls: string[] = [];
       for (const file of Array.from(files)) {
         const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-        const { signedUrl, publicUrl } = await upload({ data: { filename: safe } });
+        const { signedUrl, path } = await upload({ data: { filename: safe } });
         const res = await fetch(signedUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
         if (!res.ok) throw new Error("Upload failed");
-        urls.push(publicUrl);
+        const { url } = await signUrl({ data: { path } });
+        urls.push(url);
       }
       setForm({ ...form, image_urls: [...form.image_urls, ...urls].slice(0, 15) });
       toast.success(`${urls.length} image(s) uploaded`);
