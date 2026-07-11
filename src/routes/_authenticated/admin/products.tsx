@@ -44,6 +44,7 @@ function AdminProductsPage() {
   const save = useServerFn(adminSaveProduct);
   const remove = useServerFn(adminDeleteProduct);
   const upload = useServerFn(adminCreateUploadUrl);
+  const signUrl = useServerFn(adminSignImageUrl);
   const autofill = useServerFn(adminAutofillFromImage);
   const qc = useQueryClient();
   const { data: products = [], isLoading } = useQuery({ queryKey: ["admin-products"], queryFn: () => list() });
