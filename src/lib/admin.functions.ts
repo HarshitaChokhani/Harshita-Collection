@@ -424,3 +424,26 @@ export const adminSignImageUrl = createServerFn({ method: "POST" })
     return { url: url.signedUrl };
   });
 
+
+// One-shot: re-sign every stored product_images.url that points at this project's private bucket.
+export const adminResignAllProductImages = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin.from("product_images").select("id, url");
+    if (error) throw new Error(error.message);
+    const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
+    let updated = 0;
+    for (const r of rows ?? []) {
+      const m = /\/storage\/v1\/object\/(?:public|sign)\/product-images\/([^?]+)/.exec(r.url ?? "");
+      if (!m) continue;
+      const path = decodeURIComponent(m[1]);
+      const { data: signed, error: sErr } = await supabaseAdmin.storage
+        .from("product-images").createSignedUrl(path, TEN_YEARS);
+      if (sErr || !signed) continue;
+      const { error: uErr } = await supabaseAdmin.from("product_images").update({ url: signed.signedUrl }).eq("id", r.id);
+      if (!uErr) updated++;
+    }
+    return { updated, total: rows?.length ?? 0 };
+  });
