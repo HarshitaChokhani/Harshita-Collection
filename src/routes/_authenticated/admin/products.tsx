@@ -7,7 +7,9 @@ import { Plus, Pencil, Trash2, Upload, X, Sparkles } from "lucide-react";
 import {
   adminListProducts, adminSaveProduct, adminDeleteProduct,
   adminListCategories, adminCreateUploadUrl, adminSignImageUrl, adminAutofillFromImage,
+  adminResignAllProductImages,
 } from "@/lib/admin.functions";
+
 
 import { formatINR } from "@/lib/format";
 import { resolveImage } from "@/lib/asset-map";
