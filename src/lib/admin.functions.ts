@@ -407,11 +407,20 @@ export const adminCreateUploadUrl = createServerFn({ method: "POST" })
       .from("product-images")
       .createSignedUploadUrl(path);
     if (error) throw new Error(error.message);
-    // Bucket is private — mint a long-lived signed URL (~10 years) so <img src> works publicly.
-    const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
-    const { data: readable, error: signErr } = await supabaseAdmin.storage
-      .from("product-images").createSignedUrl(path, TEN_YEARS);
-    if (signErr) throw new Error(signErr.message);
-    return { signedUrl: signed.signedUrl, token: signed.token, path, publicUrl: readable.signedUrl };
-
+    return { signedUrl: signed.signedUrl, token: signed.token, path };
   });
+
+// After the file is PUT, mint a long-lived signed READ URL (bucket is private).
+export const adminSignImageUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ path: z.string().min(1).max(500) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
+    const { data: url, error } = await supabaseAdmin.storage
+      .from("product-images").createSignedUrl(data.path, TEN_YEARS);
+    if (error) throw new Error(error.message);
+    return { url: url.signedUrl };
+  });
+
