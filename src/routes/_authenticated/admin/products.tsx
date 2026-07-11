@@ -173,11 +173,24 @@ function AdminProductsPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-display text-4xl">Products</h1>
         {!form && (
-          <button onClick={() => setForm({ ...blank })} className="inline-flex items-center gap-2 bg-espresso text-ivory px-5 py-2.5 text-xs uppercase tracking-[0.25em]">
-            <Plus className="size-4" /> Add product
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                try {
+                  const r = await (useServerFn(adminResignAllProductImages) as any)();
+                  toast.success(`Refreshed ${r.updated}/${r.total} images`);
+                  qc.invalidateQueries({ queryKey: ["admin-products"] });
+                } catch (e) { toast.error(e instanceof Error ? e.message : "Refresh failed"); }
+              }}
+              className="text-xs uppercase tracking-[0.25em] px-4 py-2.5 border border-border hover:bg-beige/40"
+            >Refresh image URLs</button>
+            <button onClick={() => setForm({ ...blank })} className="inline-flex items-center gap-2 bg-espresso text-ivory px-5 py-2.5 text-xs uppercase tracking-[0.25em]">
+              <Plus className="size-4" /> Add product
+            </button>
+          </div>
         )}
       </div>
+
 
       {form && (
         <form onSubmit={onSubmit} className="bg-ivory border border-border p-6 mb-8 space-y-6">
