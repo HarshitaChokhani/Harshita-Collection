@@ -407,6 +407,11 @@ export const adminCreateUploadUrl = createServerFn({ method: "POST" })
       .from("product-images")
       .createSignedUploadUrl(path);
     if (error) throw new Error(error.message);
-    const { data: pub } = supabaseAdmin.storage.from("product-images").getPublicUrl(path);
-    return { signedUrl: signed.signedUrl, token: signed.token, path, publicUrl: pub.publicUrl };
+    // Bucket is private — mint a long-lived signed URL (~10 years) so <img src> works publicly.
+    const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
+    const { data: readable, error: signErr } = await supabaseAdmin.storage
+      .from("product-images").createSignedUrl(path, TEN_YEARS);
+    if (signErr) throw new Error(signErr.message);
+    return { signedUrl: signed.signedUrl, token: signed.token, path, publicUrl: readable.signedUrl };
+
   });
