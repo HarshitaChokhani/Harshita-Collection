@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Upload, X, Sparkles } from "lucide-react";
 import {
   adminListProducts, adminSaveProduct, adminDeleteProduct,
-  adminListCategories, adminCreateUploadUrl, adminAutofillFromImage,
+  adminListCategories, adminCreateUploadUrl, adminSignImageUrl, adminAutofillFromImage,
+  adminResignAllProductImages,
 } from "@/lib/admin.functions";
+
+
 import { formatINR } from "@/lib/format";
 import { resolveImage } from "@/lib/asset-map";
 
@@ -43,6 +46,8 @@ function AdminProductsPage() {
   const save = useServerFn(adminSaveProduct);
   const remove = useServerFn(adminDeleteProduct);
   const upload = useServerFn(adminCreateUploadUrl);
+  const signUrl = useServerFn(adminSignImageUrl);
+  const resignAll = useServerFn(adminResignAllProductImages);
   const autofill = useServerFn(adminAutofillFromImage);
   const qc = useQueryClient();
   const { data: products = [], isLoading } = useQuery({ queryKey: ["admin-products"], queryFn: () => list() });
@@ -86,10 +91,11 @@ function AdminProductsPage() {
       const urls: string[] = [];
       for (const file of Array.from(files)) {
         const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-        const { signedUrl, publicUrl } = await upload({ data: { filename: safe } });
+        const { signedUrl, path } = await upload({ data: { filename: safe } });
         const res = await fetch(signedUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
         if (!res.ok) throw new Error("Upload failed");
-        urls.push(publicUrl);
+        const { url } = await signUrl({ data: { path } });
+        urls.push(url);
       }
       setForm({ ...form, image_urls: [...form.image_urls, ...urls].slice(0, 15) });
       toast.success(`${urls.length} image(s) uploaded`);
@@ -168,11 +174,24 @@ function AdminProductsPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-display text-4xl">Products</h1>
         {!form && (
-          <button onClick={() => setForm({ ...blank })} className="inline-flex items-center gap-2 bg-espresso text-ivory px-5 py-2.5 text-xs uppercase tracking-[0.25em]">
-            <Plus className="size-4" /> Add product
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                try {
+                  const r = await resignAll();
+                  toast.success(`Refreshed ${r.updated}/${r.total} images`);
+                  qc.invalidateQueries({ queryKey: ["admin-products"] });
+                } catch (e) { toast.error(e instanceof Error ? e.message : "Refresh failed"); }
+              }}
+              className="text-xs uppercase tracking-[0.25em] px-4 py-2.5 border border-border hover:bg-beige/40"
+            >Refresh image URLs</button>
+            <button onClick={() => setForm({ ...blank })} className="inline-flex items-center gap-2 bg-espresso text-ivory px-5 py-2.5 text-xs uppercase tracking-[0.25em]">
+              <Plus className="size-4" /> Add product
+            </button>
+          </div>
         )}
       </div>
+
 
       {form && (
         <form onSubmit={onSubmit} className="bg-ivory border border-border p-6 mb-8 space-y-6">
