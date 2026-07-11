@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Upload, X, Sparkles } from "lucide-react";
 import {
   adminListProducts, adminSaveProduct, adminDeleteProduct,
-  adminListCategories, adminCreateUploadUrl, adminAutofillFromImage,
+  adminListCategories, adminCreateUploadUrl, adminSignImageUrl, adminAutofillFromImage,
 } from "@/lib/admin.functions";
+
 import { formatINR } from "@/lib/format";
 import { resolveImage } from "@/lib/asset-map";
 
