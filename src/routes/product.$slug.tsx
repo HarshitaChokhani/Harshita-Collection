@@ -203,16 +203,31 @@ function ProductPage() {
             </button>
           </div>
 
-          {/* WhatsApp ask + share */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-8">
-            <a href={waLink(askMsg)} target="_blank" rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#25D366] text-white py-3 text-xs uppercase tracking-[0.2em] hover:opacity-90">
-              <MessageCircle className="size-4" /> Ask on WhatsApp
-            </a>
-            <a href={waLink(shareMsg)} target="_blank" rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-ivory border border-border py-3 text-xs uppercase tracking-[0.2em] hover:border-gold hover:text-gold">
-              <Share2 className="size-4" /> Share on WhatsApp
-            </a>
+          {/* Share */}
+          <div className="mb-8">
+            <button
+              onClick={async () => {
+                const shareData = { title: product.name, text: shareMsg, url: shareUrl };
+                try {
+                  if (typeof navigator !== "undefined" && (navigator as Navigator).share) {
+                    await (navigator as Navigator).share(shareData);
+                  } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+                    await navigator.clipboard.writeText(shareUrl);
+                    toast.success("Link copied — paste it in WhatsApp, Instagram, or Messages");
+                  }
+                } catch (err) {
+                  if ((err as Error)?.name !== "AbortError") {
+                    toast.error("Unable to share");
+                  }
+                }
+              }}
+              className="w-full inline-flex items-center justify-center gap-2 bg-ivory border border-border py-3 text-xs uppercase tracking-[0.2em] hover:border-gold hover:text-gold"
+            >
+              <Share2 className="size-4" /> Share Product
+            </button>
+            <p className="text-[10px] text-muted-foreground text-center mt-2 uppercase tracking-[0.15em]">
+              Share via WhatsApp, Instagram, Messages & more
+            </p>
           </div>
 
           {/* Detail strip */}
