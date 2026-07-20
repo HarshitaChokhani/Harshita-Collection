@@ -98,6 +98,7 @@ export const getHomepageProducts = createServerFn({ method: "GET" }).handler(asy
     .select(`${PRODUCT_COLS}, product_images(url, alt, sort_order)`)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
     .limit(50);
   if (error) throw new Error(error.message);
   const all = (data ?? []).map((r: any) =>
@@ -132,7 +133,7 @@ export const getProductsByCategory = createServerFn({ method: "GET" })
         const { data: cat } = await sb.from("categories").select("id, name").eq("slug", data.slug).maybeSingle();
         if (cat) q = q.eq("category_id", cat.id);
       }
-      const { data: rows, error } = await q.order("created_at", { ascending: false });
+      const { data: rows, error } = await q.order("created_at", { ascending: false }).order("id", { ascending: false });
       if (error) throw new Error(error.message);
       return {
         category: { slug: data.slug, name: titleize(data.slug) },
@@ -155,7 +156,8 @@ export const getProductsByCategory = createServerFn({ method: "GET" })
       .select(`${PRODUCT_COLS}, product_images(url, alt, sort_order)`)
       .eq("is_active", true)
       .eq("category_id", cat.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
     if (error) throw new Error(error.message);
 
     return {
