@@ -51,14 +51,17 @@ export const adminListProducts = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("products")
       .select("id, slug, name, price, stock, is_active, is_featured, is_new, is_bestseller, category_id, description, fabric, mrp, discount_pct, cotton_percentage, material_composition, wash_care, colors, shipping_info, return_policy, categories(name), product_images(id, url, sort_order, alt)")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []).map((product: any) => ({
       ...product,
-      product_images: (product.product_images ?? []).map((image: any) => ({
-        ...image,
-        url: toProductImageProxyUrl(image.url ?? ""),
-      })),
+      product_images: [...(product.product_images ?? [])]
+        .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((image: any) => ({
+          ...image,
+          url: toProductImageProxyUrl(image.url ?? ""),
+        })),
     }));
   });
 
