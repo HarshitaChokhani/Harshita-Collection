@@ -498,13 +498,7 @@ export const adminResignAllProductImages = createServerFn({ method: "POST" })
     let updated = 0;
     for (const r of rows ?? []) {
       const u = r.url ?? "";
-      let path: string | null = null;
-      const m = /\/storage\/v1\/object\/(?:public|sign|authenticated)\/product-images\/([^?]+)/.exec(u);
-      if (m) path = decodeURIComponent(m[1]);
-      else {
-        const m2 = /\/api\/public\/product-image\?path=([^&]+)/.exec(u);
-        if (m2) path = decodeURIComponent(m2[1]);
-      }
+      const path = getProductImagePath(u);
       if (!path) continue;
       const next = `/api/public/product-image?path=${encodeURIComponent(path)}`;
       if (next === u) continue;
