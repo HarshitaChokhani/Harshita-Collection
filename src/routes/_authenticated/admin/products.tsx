@@ -56,6 +56,7 @@ function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [autofilling, setAutofilling] = useState(false);
+  const debugImages = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debugImages");
 
   const onAutofill = async () => {
     if (!form || !form.image_urls.length) return;
@@ -303,7 +304,33 @@ function AdminProductsPage() {
                 <tr key={p.id} className="hover:bg-beige/20">
                   <td className="p-3">
                     <div className="flex items-center gap-3">
-                      <img src={resolveImage(p.product_images?.[0]?.url)} alt="" className="w-10 h-12 object-cover bg-beige" />
+                      <img
+                        src={resolveImage(p.product_images?.[0]?.url)}
+                        alt=""
+                        className="w-10 h-12 object-cover bg-beige"
+                        onLoad={(event) => {
+                          if (!debugImages) return;
+                          const img = event.currentTarget;
+                          console.info("[product-image-debug][admin-list][load]", {
+                            productId: p.id,
+                            productName: p.name,
+                            storedUrl: p.product_images?.[0]?.url ?? null,
+                            renderedSrc: img.currentSrc,
+                            naturalWidth: img.naturalWidth,
+                            naturalHeight: img.naturalHeight,
+                          });
+                        }}
+                        onError={(event) => {
+                          if (!debugImages) return;
+                          const img = event.currentTarget;
+                          console.error("[product-image-debug][admin-list][error]", {
+                            productId: p.id,
+                            productName: p.name,
+                            storedUrl: p.product_images?.[0]?.url ?? null,
+                            renderedSrc: img.currentSrc || img.src,
+                          });
+                        }}
+                      />
                       <div>
                         <p className="font-medium">{p.name}</p>
                         <p className="text-xs text-muted-foreground">{p.categories?.name ?? "—"}</p>
