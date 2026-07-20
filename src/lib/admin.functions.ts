@@ -61,6 +61,54 @@ const colorSchema = z.array(z.object({
   hex: z.string().trim().regex(/^#?[0-9a-fA-F]{3,8}$/, "Invalid hex"),
 })).max(20).optional().nullable();
 
+function getProductImagePath(value: string): string | null {
+  const trimmed = value.trim();
+  const proxyPrefix = "/api/public/product-image?";
+
+  if (trimmed.startsWith(proxyPrefix)) {
+    const params = new URLSearchParams(trimmed.slice(proxyPrefix.length));
+    return cleanStoragePath(params.get("path"));
+  }
+
+  try {
+    const url = new URL(trimmed);
+    if (url.pathname === "/api/public/product-image") {
+      return cleanStoragePath(url.searchParams.get("path"));
+    }
+    const match = /\/storage\/v1\/object\/(?:public|sign|authenticated)\/product-images\/([^?]+)/.exec(url.pathname);
+    if (match) return cleanStoragePath(decodeURIComponent(match[1]));
+  } catch {
+    // Not an absolute URL; handled below.
+  }
+
+  return null;
+}
+
+function cleanStoragePath(path: string | null): string | null {
+  if (!path) return null;
+  const normalized = path.replace(/^\/+/, "").trim();
+  if (!normalized || normalized.includes("..") || normalized.length > 500) return null;
+  return normalized;
+}
+
+function isAcceptedProductImageUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (getProductImagePath(trimmed)) return true;
+  if (/^[a-zA-Z0-9._-]+\.(?:jpe?g|png|webp|gif)$/i.test(trimmed)) return true;
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+const productImageUrlSchema = z.string().trim().min(1).max(2000).refine(
+  isAcceptedProductImageUrl,
+  "Invalid product image URL",
+);
+
 const productInput = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(2).max(200),
@@ -82,7 +130,7 @@ const productInput = z.object({
   is_featured: z.boolean().default(false),
   is_new: z.boolean().default(false),
   is_bestseller: z.boolean().default(false),
-  image_urls: z.array(z.string().url().max(500)).max(15).optional(),
+  image_urls: z.array(productImageUrlSchema).max(15).optional(),
 });
 
 export const adminSaveProduct = createServerFn({ method: "POST" })
@@ -318,23 +366,38 @@ const autofillSchema = {
 export const adminAutofillFromImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
-    imageUrl: z.string().url().max(1000),
+    imageUrl: productImageUrlSchema,
   }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("AI autofill is not configured (missing ANTHROPIC_API_KEY).");
 
-    // Fetch the image server-side and send it inline as base64 so this works
-    // regardless of whether the storage bucket is publicly reachable by Anthropic.
-    const imgRes = await fetch(data.imageUrl);
-    if (!imgRes.ok) throw new Error("Could not load the uploaded image.");
-    const mediaType = imgRes.headers.get("content-type")?.split(";")[0] || "image/jpeg";
-    if (!/^image\/(jpeg|png|gif|webp)$/.test(mediaType)) throw new Error("Unsupported image type for autofill.");
-    const base64 = Buffer.from(await imgRes.arrayBuffer()).toString("base64");
-
     // Category list guides the model toward a valid choice.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Fetch the image server-side and send it inline as base64 so this works
+    // regardless of whether the storage bucket is publicly reachable by Anthropic.
+    const storagePath = getProductImagePath(data.imageUrl);
+    let mediaType = "image/jpeg";
+    let imageBytes: ArrayBuffer;
+
+    if (storagePath) {
+      const { data: blob, error } = await supabaseAdmin.storage
+        .from("product-images")
+        .download(storagePath);
+      if (error || !blob) throw new Error("Could not load the uploaded image.");
+      mediaType = blob.type || mediaType;
+      imageBytes = await blob.arrayBuffer();
+    } else {
+      const imgRes = await fetch(data.imageUrl);
+      if (!imgRes.ok) throw new Error("Could not load the uploaded image.");
+      mediaType = imgRes.headers.get("content-type")?.split(";")[0] || mediaType;
+      imageBytes = await imgRes.arrayBuffer();
+    }
+
+    if (!/^image\/(jpeg|png|gif|webp)$/.test(mediaType)) throw new Error("Unsupported image type for autofill.");
+    const base64 = Buffer.from(imageBytes).toString("base64");
+
     const { data: cats } = await supabaseAdmin.from("categories").select("name").order("sort_order");
     const categoryNames = (cats ?? []).map((c) => c.name);
 
@@ -413,10 +476,13 @@ export const adminCreateUploadUrl = createServerFn({ method: "POST" })
 // After the file is PUT, return a stable public proxy URL served by our origin.
 export const adminSignImageUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ path: z.string().min(1).max(500) }).parse(d))
+  .inputValidator((d: unknown) => z.object({
+    path: z.string().min(1).max(500).refine((path) => !!cleanStoragePath(path), "Invalid image path"),
+  }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    return { url: `/api/public/product-image?path=${encodeURIComponent(data.path)}` };
+    const path = cleanStoragePath(data.path)!;
+    return { url: `/api/public/product-image?path=${encodeURIComponent(path)}` };
   });
 
 
