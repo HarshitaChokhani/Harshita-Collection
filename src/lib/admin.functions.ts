@@ -51,9 +51,18 @@ export const adminListProducts = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("products")
       .select("id, slug, name, price, stock, is_active, is_featured, is_new, is_bestseller, category_id, description, fabric, mrp, discount_pct, cotton_percentage, material_composition, wash_care, colors, shipping_info, return_policy, categories(name), product_images(id, url, sort_order, alt)")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return (data ?? []).map((product: any) => ({
+      ...product,
+      product_images: [...(product.product_images ?? [])]
+        .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((image: any) => ({
+          ...image,
+          url: toProductImageProxyUrl(image.url ?? ""),
+        })),
+    }));
   });
 
 const colorSchema = z.array(z.object({
@@ -102,6 +111,11 @@ function isAcceptedProductImageUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function toProductImageProxyUrl(value: string): string {
+  const path = getProductImagePath(value);
+  return path ? `/api/public/product-image?path=${encodeURIComponent(path)}` : value.trim();
 }
 
 const productImageUrlSchema = z.string().trim().min(1).max(2000).refine(
@@ -155,7 +169,7 @@ export const adminSaveProduct = createServerFn({ method: "POST" })
     }
     if (image_urls && productId) {
       await supabaseAdmin.from("product_images").delete().eq("product_id", productId);
-      const rows = image_urls.map((url, i) => ({ product_id: productId, url, sort_order: i, alt: row.name }));
+      const rows = image_urls.map((url, i) => ({ product_id: productId, url: toProductImageProxyUrl(url), sort_order: i, alt: row.name }));
       if (rows.length) {
         const { error } = await supabaseAdmin.from("product_images").insert(rows);
         if (error) throw new Error(error.message);

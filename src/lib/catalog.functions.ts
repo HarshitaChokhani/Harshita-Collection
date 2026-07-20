@@ -10,6 +10,41 @@ async function admin() {
 const PRODUCT_COLS =
   "id, slug, name, description, fabric, category_id, price, mrp, discount_pct, rating, rating_count, stock, is_new, is_bestseller, is_featured, cotton_percentage, material_composition, wash_care, colors, shipping_info, return_policy";
 
+function cleanStoragePath(path: string | null): string | null {
+  if (!path) return null;
+  const normalized = path.replace(/^\/+/, "").trim();
+  if (!normalized || normalized.includes("..") || normalized.length > 500) return null;
+  return normalized;
+}
+
+function getProductImagePath(value: string): string | null {
+  const trimmed = value.trim();
+  const proxyPrefix = "/api/public/product-image?";
+
+  if (trimmed.startsWith(proxyPrefix)) {
+    const params = new URLSearchParams(trimmed.slice(proxyPrefix.length));
+    return cleanStoragePath(params.get("path"));
+  }
+
+  try {
+    const url = new URL(trimmed);
+    if (url.pathname === "/api/public/product-image") {
+      return cleanStoragePath(url.searchParams.get("path"));
+    }
+    const match = /\/storage\/v1\/object\/(?:public|sign|authenticated)\/product-images\/([^?]+)/.exec(url.pathname);
+    if (match) return cleanStoragePath(decodeURIComponent(match[1]));
+  } catch {
+    // Not an absolute URL; leave bundled asset filenames unchanged.
+  }
+
+  return null;
+}
+
+function toProductImageProxyUrl(value: string): string {
+  const path = getProductImagePath(value);
+  return path ? `/api/public/product-image?path=${encodeURIComponent(path)}` : value.trim();
+}
+
 function rowToProduct(row: any, images: any[] = [], variants: any[] = []): Product {
   return {
     id: row.id,
@@ -35,7 +70,7 @@ function rowToProduct(row: any, images: any[] = [], variants: any[] = []): Produ
     colors: Array.isArray(row.colors) ? row.colors : null,
     shipping_info: row.shipping_info ?? null,
     return_policy: row.return_policy ?? null,
-    images: images.map((i) => ({ url: i.url, alt: i.alt, sort_order: i.sort_order })),
+    images: images.map((i) => ({ url: toProductImageProxyUrl(i.url ?? ""), alt: i.alt, sort_order: i.sort_order })),
     variants: variants.map((v) => ({
       id: v.id,
       size: v.size,
@@ -63,6 +98,7 @@ export const getHomepageProducts = createServerFn({ method: "GET" }).handler(asy
     .select(`${PRODUCT_COLS}, product_images(url, alt, sort_order)`)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
     .limit(50);
   if (error) throw new Error(error.message);
   const all = (data ?? []).map((r: any) =>
@@ -97,7 +133,7 @@ export const getProductsByCategory = createServerFn({ method: "GET" })
         const { data: cat } = await sb.from("categories").select("id, name").eq("slug", data.slug).maybeSingle();
         if (cat) q = q.eq("category_id", cat.id);
       }
-      const { data: rows, error } = await q.order("created_at", { ascending: false });
+      const { data: rows, error } = await q.order("created_at", { ascending: false }).order("id", { ascending: false });
       if (error) throw new Error(error.message);
       return {
         category: { slug: data.slug, name: titleize(data.slug) },
@@ -120,7 +156,8 @@ export const getProductsByCategory = createServerFn({ method: "GET" })
       .select(`${PRODUCT_COLS}, product_images(url, alt, sort_order)`)
       .eq("is_active", true)
       .eq("category_id", cat.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
     if (error) throw new Error(error.message);
 
     return {
