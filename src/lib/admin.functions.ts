@@ -410,22 +410,18 @@ export const adminCreateUploadUrl = createServerFn({ method: "POST" })
     return { signedUrl: signed.signedUrl, token: signed.token, path };
   });
 
-// After the file is PUT, mint a long-lived signed READ URL (bucket is private).
+// After the file is PUT, return a stable public proxy URL served by our origin.
 export const adminSignImageUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ path: z.string().min(1).max(500) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
-    const { data: url, error } = await supabaseAdmin.storage
-      .from("product-images").createSignedUrl(data.path, TEN_YEARS);
-    if (error) throw new Error(error.message);
-    return { url: url.signedUrl };
+    return { url: `/api/public/product-image?path=${encodeURIComponent(data.path)}` };
   });
 
 
-// One-shot: re-sign every stored product_images.url that points at this project's private bucket.
+// One-shot: rewrite every stored product_images.url that references this bucket
+// to the stable public proxy URL.
 export const adminResignAllProductImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -433,17 +429,22 @@ export const adminResignAllProductImages = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin.from("product_images").select("id, url");
     if (error) throw new Error(error.message);
-    const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
     let updated = 0;
     for (const r of rows ?? []) {
-      const m = /\/storage\/v1\/object\/(?:public|sign)\/product-images\/([^?]+)/.exec(r.url ?? "");
-      if (!m) continue;
-      const path = decodeURIComponent(m[1]);
-      const { data: signed, error: sErr } = await supabaseAdmin.storage
-        .from("product-images").createSignedUrl(path, TEN_YEARS);
-      if (sErr || !signed) continue;
-      const { error: uErr } = await supabaseAdmin.from("product_images").update({ url: signed.signedUrl }).eq("id", r.id);
+      const u = r.url ?? "";
+      let path: string | null = null;
+      const m = /\/storage\/v1\/object\/(?:public|sign|authenticated)\/product-images\/([^?]+)/.exec(u);
+      if (m) path = decodeURIComponent(m[1]);
+      else {
+        const m2 = /\/api\/public\/product-image\?path=([^&]+)/.exec(u);
+        if (m2) path = decodeURIComponent(m2[1]);
+      }
+      if (!path) continue;
+      const next = `/api/public/product-image?path=${encodeURIComponent(path)}`;
+      if (next === u) continue;
+      const { error: uErr } = await supabaseAdmin.from("product_images").update({ url: next }).eq("id", r.id);
       if (!uErr) updated++;
     }
     return { updated, total: rows?.length ?? 0 };
   });
+
