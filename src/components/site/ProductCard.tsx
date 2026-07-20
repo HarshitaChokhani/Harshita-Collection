@@ -9,7 +9,6 @@ import { useWishlist } from "@/lib/store/wishlist";
 
 export function ProductCard({ product }: { product: Product }) {
   const img = resolveImage(product.images[0]?.url);
-  const debugImages = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debugImages");
   const wished = useWishlist((s) => s.ids.includes(product.id));
   const toggleWl = useWishlist((s) => s.toggle);
   const addToCart = useCart((s) => s.add);
@@ -25,28 +24,6 @@ export function ProductCard({ product }: { product: Product }) {
             width={800}
             height={1000}
             className="w-full aspect-[4/5] object-cover transition-transform duration-700 group-hover:scale-105"
-            onLoad={(event) => {
-              if (!debugImages) return;
-              const image = event.currentTarget;
-              console.info("[product-image-debug][product-card][load]", {
-                productId: product.id,
-                productName: product.name,
-                storedUrl: product.images[0]?.url ?? null,
-                renderedSrc: image.currentSrc,
-                naturalWidth: image.naturalWidth,
-                naturalHeight: image.naturalHeight,
-              });
-            }}
-            onError={(event) => {
-              if (!debugImages) return;
-              const image = event.currentTarget;
-              console.error("[product-image-debug][product-card][error]", {
-                productId: product.id,
-                productName: product.name,
-                storedUrl: product.images[0]?.url ?? null,
-                renderedSrc: image.currentSrc || image.src,
-              });
-            }}
           />
         </Link>
         {product.discount_pct ? (
