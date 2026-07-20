@@ -51,7 +51,6 @@ function ProductPage() {
   const [activeImg, setActiveImg] = useState(0);
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const debugImages = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debugImages");
   const addToCart = useCart((s) => s.add);
   const wished = useWishlist((s) => product ? s.ids.includes(product.id) : false);
   const toggleWl = useWishlist((s) => s.toggle);
@@ -91,28 +90,6 @@ function ProductPage() {
               fetchPriority="high"
               className="w-full h-full object-cover cursor-zoom-in"
               onClick={() => setGalleryOpen(true)}
-              onLoad={(event) => {
-                if (!debugImages) return;
-                const image = event.currentTarget;
-                console.info("[product-image-debug][product-page][load]", {
-                  productId: product.id,
-                  productName: product.name,
-                  storedUrl: images[activeImg]?.url ?? images[0]?.url ?? null,
-                  renderedSrc: image.currentSrc,
-                  naturalWidth: image.naturalWidth,
-                  naturalHeight: image.naturalHeight,
-                });
-              }}
-              onError={(event) => {
-                if (!debugImages) return;
-                const image = event.currentTarget;
-                console.error("[product-image-debug][product-page][error]", {
-                  productId: product.id,
-                  productName: product.name,
-                  storedUrl: images[activeImg]?.url ?? images[0]?.url ?? null,
-                  renderedSrc: image.currentSrc || image.src,
-                });
-              }}
             />
             <button
               onClick={() => setGalleryOpen(true)}
