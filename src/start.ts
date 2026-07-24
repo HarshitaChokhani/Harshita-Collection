@@ -1,7 +1,6 @@
 import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -18,7 +17,21 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
+const optionalSupabaseAuth = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return next({
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  } catch (error) {
+    console.warn("Auth session was unavailable for this request.", error);
+    return next({ headers: {} });
+  }
+});
+
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
+  functionMiddleware: [optionalSupabaseAuth],
   requestMiddleware: [errorMiddleware],
 }));
