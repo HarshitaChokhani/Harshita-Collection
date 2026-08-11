@@ -41,8 +41,9 @@ Harshita Collection is a digital boutique focused on traditional Indian fashion,
 - React
 - TypeScript
 - Vite
-- Supabase
+- Lovable Cloud (built on Supabase)
 - Tailwind CSS
+
 
 ## Project Status
 
