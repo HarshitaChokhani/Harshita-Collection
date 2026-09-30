@@ -27,9 +27,22 @@ function NotFoundComponent() {
   );
 }
 
+const LOAD_ERROR_RE = /Load failed|Failed to fetch|NetworkError|Importing a module script failed|dynamically imported module|error loading dynamically/i;
+
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
-  useEffect(() => { reportLovableError(error, { boundary: "tanstack_root_error_component" }); }, [error]);
+  useEffect(() => {
+    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    // Transient network / stale-code errors: reload once automatically (cart is kept in storage).
+    if (typeof window !== "undefined" && LOAD_ERROR_RE.test(String(error?.message ?? error))) {
+      const key = "hc-auto-reload";
+      const last = Number(sessionStorage.getItem(key) ?? 0);
+      if (Date.now() - last > 15000) {
+        sessionStorage.setItem(key, String(Date.now()));
+        window.location.reload();
+      }
+    }
+  }, [error]);
   return (
     <div className="min-h-screen grid place-items-center px-4">
       <div className="text-center max-w-md">
