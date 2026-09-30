@@ -32,7 +32,25 @@ function loadRazorpay(): Promise<boolean> {
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({ meta: [{ title: "Checkout — Harshita Collection" }] }),
   component: CheckoutPage,
+  errorComponent: ({ reset }) => (
+    <main className="max-w-xl mx-auto px-4 py-24 text-center">
+      <h1 className="font-display text-3xl mb-3">We couldn't load checkout</h1>
+      <p className="text-muted-foreground mb-8">Your cart is saved. Please check your connection and try again.</p>
+      <div className="flex gap-3 justify-center">
+        <button onClick={() => reset()} className="bg-espresso text-ivory px-6 py-3 text-xs uppercase tracking-[0.25em]">Try again</button>
+        <Link to="/cart" className="border border-border px-6 py-3 text-xs uppercase tracking-[0.25em]">Back to cart</Link>
+      </div>
+    </main>
+  ),
 });
+
+const friendly = (err: unknown, fallback: string) => {
+  const msg = err instanceof Error ? err.message : "";
+  if (/unauthori/i.test(msg)) return "Your session expired. Please sign in again.";
+  if (/unavailable|cancelled|already paid|Payment SDK/i.test(msg)) return msg;
+  if (/fetch|network/i.test(msg)) return "Network problem — please try again. Your cart is safe.";
+  return fallback;
+};
 
 const blank = {
   full_name: "", phone: "", line1: "", line2: "",
@@ -97,11 +115,23 @@ function CheckoutPage() {
   };
 
   const onPlace = async () => {
+    if (items.length === 0) { toast.error("Your cart is empty"); navigate({ to: "/cart" }); return; }
     const addr = selectedId === "new" ? form : addresses.find((a) => a.id === selectedId);
     if (!addr) { toast.error("Choose a shipping address"); return; }
+    if (selectedId === "new") {
+      const missing: string[] = [];
+      if (form.full_name.trim().length < 2) missing.push("Full name");
+      if (!/^\+?\d[\d\s-]{6,18}$/.test(form.phone.trim())) missing.push("Phone");
+      if (form.line1.trim().length < 3) missing.push("Address line 1");
+      if (form.city.trim().length < 2) missing.push("City");
+      if (form.state.trim().length < 2) missing.push("State");
+      if (!/^\d{6}$/.test(form.pincode.trim())) missing.push("Pincode (6 digits)");
+      if (missing.length) { toast.error(`Please check: ${missing.join(", ")}`); return; }
+    }
     setPlacing(true);
+    let order: { id: string; order_number: string; total: number };
     try {
-      const order = await placeOrder({
+      order = await placeOrder({
         data: {
           items: items.map((i) => ({
             productId: i.productId,
@@ -126,7 +156,12 @@ function CheckoutPage() {
           notes: notes || null,
         },
       });
-
+    } catch (err) {
+      toast.error(friendly(err, "We couldn't create your order. Please try again."));
+      setPlacing(false);
+      return;
+    }
+    try {
       const loaded = await loadRazorpay();
       if (!loaded) throw new Error("Payment SDK failed to load");
 
@@ -171,7 +206,7 @@ function CheckoutPage() {
       toast.success(`Payment successful — order ${order.order_number}`);
       navigate({ to: "/orders/$id", params: { id: order.id }, replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not complete payment");
+      toast.error(friendly(err, "Payment could not be completed. Your cart is saved — please try again."));
     } finally { setPlacing(false); }
   };
 
